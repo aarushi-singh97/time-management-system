@@ -51,7 +51,9 @@ CREATE TABLE appointments (
   start_time DATETIME NOT NULL,
   end_time DATETIME NOT NULL,
   appointment_type ENUM('appointment', 'important_job', 'personal') NOT NULL DEFAULT 'appointment',
+  status ENUM('scheduled', 'completed', 'cancelled') NOT NULL DEFAULT 'scheduled',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_appointments_user
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT chk_appointment_times CHECK (end_time > start_time)
