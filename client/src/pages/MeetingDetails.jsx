@@ -1,0 +1,6 @@
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import DashboardLayout from '../layouts/DashboardLayout';
+import { getMeeting } from '../services/meetingService';
+function MeetingDetails() { const { id } = useParams(); const [data, setData] = useState(null); const [error, setError] = useState(''); useEffect(() => { getMeeting(id).then(setData).catch((err) => setError(err.response?.data?.message || 'Could not load meeting.')); }, [id]); return <DashboardLayout>{error ? <p className="text-red-600">{error}</p> : !data ? <p>Loading meeting...</p> : <section className="rounded-lg bg-white p-6 shadow-sm"><h1 className="text-2xl font-bold">{data.meeting.title}</h1><p className="mt-2">{data.meeting.agenda || 'No purpose provided.'}</p><p className="mt-3">{new Date(data.meeting.start_time).toLocaleString()} – {new Date(data.meeting.end_time).toLocaleTimeString()}</p><p>Venue: {data.meeting.venue || 'Not provided'}</p><h2 className="mt-5 font-semibold">Participants</h2><ul>{data.participants.map((person) => <li key={person.id}>{person.full_name} — {person.response_status}</li>)}</ul><Link className="mt-5 inline-block text-blue-700" to="/meetings">Back to meetings</Link></section>}</DashboardLayout>; }
+export default MeetingDetails;

@@ -15,8 +15,8 @@ function Sidebar({ role }) {
       <p className="mb-6 text-lg font-bold text-white">TMS Portal</p>
       <nav className="flex gap-2 overflow-x-auto md:flex-col">
         {sidebarItems[role].map((item) => (
-          item === 'Dashboard' || (role === 'executive' && item === 'Appointments') ? (
-            <NavLink key={item} to={item === 'Dashboard' ? dashboardPath : '/appointments'} className="rounded px-3 py-2 hover:bg-slate-700">{item}</NavLink>
+          item === 'Dashboard' || (role === 'executive' && ['Appointments', 'Meetings', 'Personal Tasks', 'Leave'].includes(item)) || (role === 'secretary' && ['Meetings', 'Leave Requests'].includes(item)) ? (
+            <NavLink key={item} to={item === 'Dashboard' ? dashboardPath : item === 'Appointments' ? '/appointments' : item === 'Meetings' ? '/meetings' : item === 'Personal Tasks' ? '/tasks' : item === 'Leave' ? '/leave' : '/leave-requests'} className="rounded px-3 py-2 hover:bg-slate-700">{item}</NavLink>
           ) : (
             <span key={item} className="rounded px-3 py-2 text-slate-400">{item}</span>
           )

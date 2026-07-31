@@ -1,4 +1,5 @@
 const appointmentModel = require('../models/appointmentModel');
+const { hasSchedulingConflict } = require('../services/slotFinderService');
 
 const validStatuses = ['scheduled', 'completed', 'cancelled'];
 
@@ -73,6 +74,8 @@ async function createAppointment(request, response, next) {
   try {
     const validationMessage = validateAppointment(request.body || {}, true);
     if (validationMessage) return response.status(400).json({ message: validationMessage });
+    const conflict = await hasSchedulingConflict(request.user.id, request.body.appointment_date, request.body.start_time, request.body.end_time);
+    if (conflict) return response.status(409).json({ message: 'You already have another engagement during this time.' });
     const appointmentId = await appointmentModel.createAppointment(request.user.id, prepareAppointment(request.body));
     response.status(201).json({ message: 'Appointment created successfully.', id: appointmentId });
   } catch (error) {
@@ -85,6 +88,8 @@ async function editAppointment(request, response, next) {
     if (!isValidId(request.params.id)) return response.status(400).json({ message: 'Invalid appointment ID.' });
     const validationMessage = validateAppointment(request.body || {}, false);
     if (validationMessage) return response.status(400).json({ message: validationMessage });
+    const conflict = await hasSchedulingConflict(request.user.id, request.body.appointment_date, request.body.start_time, request.body.end_time, request.params.id);
+    if (conflict) return response.status(409).json({ message: 'You already have another engagement during this time.' });
     const updatedRows = await appointmentModel.updateAppointment(request.user.id, request.params.id, prepareAppointment(request.body));
     if (!updatedRows) return response.status(404).json({ message: 'Appointment not found.' });
     response.status(200).json({ message: 'Appointment updated successfully.' });

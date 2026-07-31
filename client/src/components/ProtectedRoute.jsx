@@ -9,7 +9,8 @@ function ProtectedRoute({ allowedRole, children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== allowedRole) {
+  const allowedRoles = Array.isArray(allowedRole) ? allowedRole : allowedRole ? [allowedRole] : [];
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     return <Navigate to={getDashboardPath(user.role)} replace />;
   }
 

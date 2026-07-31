@@ -9,6 +9,12 @@ import AddAppointment from './pages/AddAppointment';
 import AppointmentDetails from './pages/AppointmentDetails';
 import Appointments from './pages/Appointments';
 import EditAppointment from './pages/EditAppointment';
+import Meetings from './pages/Meetings';
+import CreateMeeting from './pages/CreateMeeting';
+import MeetingDetails from './pages/MeetingDetails';
+import Leave from './pages/Leave';
+import LeaveRequests from './pages/LeaveRequests';
+import Tasks from './pages/Tasks';
 import { getSavedUser } from './services/authService';
 import { getDashboardPath } from './utils/authRoutes';
 
@@ -31,6 +37,12 @@ function App() {
         <Route path="/appointments/add" element={<ProtectedRoute allowedRole="executive"><AddAppointment /></ProtectedRoute>} />
         <Route path="/appointments/edit/:id" element={<ProtectedRoute allowedRole="executive"><EditAppointment /></ProtectedRoute>} />
         <Route path="/appointments/:id" element={<ProtectedRoute allowedRole="executive"><AppointmentDetails /></ProtectedRoute>} />
+        <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
+        <Route path="/meetings/create" element={<ProtectedRoute allowedRole={['secretary', 'admin']}><CreateMeeting /></ProtectedRoute>} />
+        <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetails /></ProtectedRoute>} />
+        <Route path="/leave" element={<ProtectedRoute allowedRole="executive"><Leave /></ProtectedRoute>} />
+        <Route path="/leave-requests" element={<ProtectedRoute allowedRole={['secretary', 'admin']}><LeaveRequests /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute allowedRole="executive"><Tasks /></ProtectedRoute>} />
         <Route path="*" element={<HomeRedirect />} />
       </Routes>
     </BrowserRouter>

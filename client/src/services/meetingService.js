@@ -1,0 +1,10 @@
+import axios from 'axios';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const config = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('tms_token')}` } });
+const request = async (method, path, data) => (await axios({ method, url: `${apiUrl}${path}`, data, ...config() })).data;
+export const getMeetings = () => request('get', '/meetings');
+export const getMeeting = (id) => request('get', `/meetings/${id}`);
+export const getExecutives = () => request('get', '/meetings/executives');
+export const findSlots = (data) => request('post', '/meetings/find-slots', data);
+export const createMeeting = (data) => request('post', '/meetings', data);
+export const cancelMeeting = (id) => request('put', `/meetings/${id}/cancel`);

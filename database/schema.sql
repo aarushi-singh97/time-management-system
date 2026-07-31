@@ -112,6 +112,8 @@ CREATE TABLE personal_tasks (
   title VARCHAR(150) NOT NULL,
   description TEXT,
   due_date DATETIME NULL,
+  start_time TIME NULL,
+  end_time TIME NULL,
   priority ENUM('low', 'medium', 'high') NOT NULL DEFAULT 'medium',
   status ENUM('pending', 'in_progress', 'completed') NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
