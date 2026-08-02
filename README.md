@@ -131,7 +131,7 @@ EMAIL_PASS=your_password
 
 ---
 
-## 🗄️ Database Setup
+## 🗄️ Database Setup 
 
 1. Open MySQL Workbench.
 2. Execute:
