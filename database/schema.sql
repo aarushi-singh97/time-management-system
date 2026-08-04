@@ -9,6 +9,8 @@ USE time_management_system;
 
 -- Drop child tables first so this script can be run again during development.
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS notification_logs;
+DROP TABLE IF EXISTS notification_settings;
 DROP TABLE IF EXISTS personal_tasks;
 DROP TABLE IF EXISTS leave_requests;
 DROP TABLE IF EXISTS meeting_participants;
@@ -134,6 +136,28 @@ CREATE TABLE notifications (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE notification_settings (
+  user_id INT PRIMARY KEY,
+  appointment_emails BOOLEAN NOT NULL DEFAULT TRUE,
+  meeting_emails BOOLEAN NOT NULL DEFAULT TRUE,
+  leave_emails BOOLEAN NOT NULL DEFAULT TRUE,
+  reminder_emails BOOLEAN NOT NULL DEFAULT TRUE,
+  summary_emails BOOLEAN NOT NULL DEFAULT TRUE,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notification_settings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE notification_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  notification_type VARCHAR(30) NOT NULL,
+  subject VARCHAR(200) NOT NULL,
+  delivery_status ENUM('sent', 'failed', 'skipped') NOT NULL,
+  error_message VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notification_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- These indexes support common calendar, report, and notification queries.
 CREATE INDEX idx_appointments_user_time ON appointments(user_id, start_time);
 CREATE INDEX idx_meetings_time ON meetings(start_time);
@@ -141,3 +165,4 @@ CREATE INDEX idx_meetings_project ON meetings(project_id);
 CREATE INDEX idx_leave_requests_user_dates ON leave_requests(user_id, start_date, end_date);
 CREATE INDEX idx_personal_tasks_user_status ON personal_tasks(user_id, status);
 CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read);
+CREATE INDEX idx_notification_logs_user_type ON notification_logs(user_id, notification_type, created_at);

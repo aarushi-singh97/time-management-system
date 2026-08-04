@@ -1,5 +1,7 @@
 const appointmentModel = require('../models/appointmentModel');
 const { hasSchedulingConflict } = require('../services/slotFinderService');
+const notificationService = require('../services/notificationService');
+const { appointmentEmail } = require('../services/emailTemplates');
 
 const validStatuses = ['scheduled', 'completed', 'cancelled'];
 
@@ -77,6 +79,7 @@ async function createAppointment(request, response, next) {
     const conflict = await hasSchedulingConflict(request.user.id, request.body.appointment_date, request.body.start_time, request.body.end_time);
     if (conflict) return response.status(409).json({ message: 'You already have another engagement during this time.' });
     const appointmentId = await appointmentModel.createAppointment(request.user.id, prepareAppointment(request.body));
+    await notificationService.send(request.user, 'appointment', appointmentEmail(request.body, 'Created'));
     response.status(201).json({ message: 'Appointment created successfully.', id: appointmentId });
   } catch (error) {
     next(error);
@@ -92,6 +95,7 @@ async function editAppointment(request, response, next) {
     if (conflict) return response.status(409).json({ message: 'You already have another engagement during this time.' });
     const updatedRows = await appointmentModel.updateAppointment(request.user.id, request.params.id, prepareAppointment(request.body));
     if (!updatedRows) return response.status(404).json({ message: 'Appointment not found.' });
+    await notificationService.send(request.user, 'appointment', appointmentEmail(request.body, 'Updated'));
     response.status(200).json({ message: 'Appointment updated successfully.' });
   } catch (error) {
     next(error);
@@ -101,8 +105,10 @@ async function editAppointment(request, response, next) {
 async function removeAppointment(request, response, next) {
   try {
     if (!isValidId(request.params.id)) return response.status(400).json({ message: 'Invalid appointment ID.' });
+    const appointment = await appointmentModel.findAppointmentById(request.user.id, request.params.id);
     const deletedRows = await appointmentModel.deleteAppointment(request.user.id, request.params.id);
     if (!deletedRows) return response.status(404).json({ message: 'Appointment not found.' });
+    await notificationService.send(request.user, 'appointment', appointmentEmail({ ...appointment, appointment_date: String(appointment.start_time).slice(0, 10), start_time: String(appointment.start_time).slice(11, 16), end_time: String(appointment.end_time).slice(11, 16) }, 'Cancelled'));
     response.status(200).json({ message: 'Appointment deleted successfully.' });
   } catch (error) {
     next(error);

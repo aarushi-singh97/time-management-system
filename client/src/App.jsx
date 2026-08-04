@@ -16,6 +16,8 @@ import MeetingDetails from './pages/MeetingDetails';
 import Leave from './pages/Leave';
 import LeaveRequests from './pages/LeaveRequests';
 import Tasks from './pages/Tasks';
+import Reports from './pages/Reports';
+import NotificationSettings from './pages/NotificationSettings';
 import { getSavedUser } from './services/authService';
 import { getDashboardPath } from './utils/authRoutes';
 
@@ -45,6 +47,8 @@ function App() {
         <Route path="/leave" element={<ProtectedRoute allowedRole="executive"><Leave /></ProtectedRoute>} />
         <Route path="/leave-requests" element={<ProtectedRoute allowedRole={['secretary', 'admin']}><LeaveRequests /></ProtectedRoute>} />
         <Route path="/tasks" element={<ProtectedRoute allowedRole="executive"><Tasks /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
         <Route path="*" element={<HomeRedirect />} />
       </Routes>
     </BrowserRouter>

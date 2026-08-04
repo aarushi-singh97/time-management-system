@@ -1,0 +1,12 @@
+const express = require('express');
+const { dashboard, analytics } = require('../controllers/reportController');
+const authenticateUser = require('../middleware/authMiddleware');
+const router = express.Router();
+router.use(authenticateUser);
+router.get('/dashboard', dashboard);
+router.get('/appointments', analytics);
+router.get('/meetings', analytics);
+router.get('/tasks', analytics);
+router.get('/leaves', analytics);
+router.get('/projects', analytics);
+module.exports = router;

@@ -1,5 +1,7 @@
 const databasePool = require('../config/database');
 const { findCommonSlots, hasSchedulingConflict } = require('../services/slotFinderService');
+const notificationService = require('../services/notificationService');
+const { meetingEmail } = require('../services/emailTemplates');
 
 function isPositiveId(value) { return Number.isInteger(Number(value)) && Number(value) > 0; }
 function isValidDate(date) {
@@ -27,6 +29,12 @@ async function participantsAreExecutives(participantIds) {
     uniqueIds
   );
   return users.length === uniqueIds.length;
+}
+
+async function notifyParticipants(participantIds, meeting, action) {
+  const placeholders = participantIds.map(() => '?').join(', ');
+  const [users] = await databasePool.execute(`SELECT id, full_name, email FROM users WHERE id IN (${placeholders})`, participantIds);
+  await Promise.all(users.map((user) => notificationService.send(user, 'meeting', meetingEmail(meeting, action))));
 }
 
 async function getExecutives(request, response, next) {
@@ -103,6 +111,7 @@ async function createMeeting(request, response, next) {
       [data.title.trim(), data.purpose?.trim() || null, data.venue?.trim() || null, `${data.meeting_date} ${data.start_time}:00`, `${data.meeting_date} ${data.end_time}:00`, data.project_id || null, request.user.id]
     );
     for (const userId of data.participant_ids) await databasePool.execute('INSERT INTO meeting_participants (meeting_id, user_id) VALUES (?, ?)', [result.insertId, Number(userId)]);
+    await notifyParticipants(data.participant_ids, data, 'Invitation');
     response.status(201).json({ message: 'Meeting scheduled successfully.', id: result.insertId });
   } catch (error) { next(error); }
 }
@@ -129,6 +138,7 @@ async function updateMeeting(request, response, next) {
     );
     await databasePool.execute('DELETE FROM meeting_participants WHERE meeting_id = ?', [request.params.id]);
     for (const userId of data.participant_ids) await databasePool.execute('INSERT INTO meeting_participants (meeting_id, user_id) VALUES (?, ?)', [request.params.id, Number(userId)]);
+    await notifyParticipants(data.participant_ids, data, 'Updated');
     response.json({ message: 'Meeting updated successfully.' });
   } catch (error) { next(error); }
 }
@@ -136,8 +146,11 @@ async function updateMeeting(request, response, next) {
 async function cancelMeeting(request, response, next) {
   try {
     if (!isPositiveId(request.params.id)) return response.status(400).json({ message: 'Invalid meeting ID.' });
+    const [participants] = await databasePool.execute('SELECT users.id, users.full_name, users.email FROM users INNER JOIN meeting_participants ON users.id = meeting_participants.user_id WHERE meeting_participants.meeting_id = ?', [request.params.id]);
+    const [meetings] = await databasePool.execute('SELECT title, DATE_FORMAT(start_time, \'%Y-%m-%d\') meeting_date, TIME_FORMAT(start_time, \'%H:%i\') start_time, TIME_FORMAT(end_time, \'%H:%i\') end_time, venue FROM meetings WHERE id = ?', [request.params.id]);
     const [result] = await databasePool.execute("UPDATE meetings SET status = 'cancelled' WHERE id = ?", [request.params.id]);
     if (!result.affectedRows) return response.status(404).json({ message: 'Meeting not found.' });
+    await Promise.all(participants.map((user) => notificationService.send(user, 'meeting', meetingEmail(meetings[0], 'Cancelled'))));
     response.json({ message: 'Meeting cancelled successfully.' });
   } catch (error) { next(error); }
 }

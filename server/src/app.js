@@ -7,6 +7,8 @@ const appointmentRoutes = require('./routes/appointmentRoutes');
 const meetingRoutes = require('./routes/meetingRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -26,6 +28,8 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use(errorHandler);
 
