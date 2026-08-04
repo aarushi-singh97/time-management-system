@@ -1,7 +1,13 @@
 const databasePool = require('../config/database');
 
 function validId(id) { return Number.isInteger(Number(id)) && Number(id) > 0; }
-function validDates(startDate, endDate) { return /^\d{4}-\d{2}-\d{2}$/.test(startDate || '') && /^\d{4}-\d{2}-\d{2}$/.test(endDate || '') && endDate >= startDate; }
+function validDate(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return false;
+  const [year, month, day] = date.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
+}
+function validDates(startDate, endDate) { return validDate(startDate) && validDate(endDate) && endDate >= startDate; }
 
 async function getLeaves(request, response, next) {
   try {

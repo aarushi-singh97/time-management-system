@@ -2,7 +2,12 @@ const databasePool = require('../config/database');
 const { findCommonSlots, hasSchedulingConflict } = require('../services/slotFinderService');
 
 function isPositiveId(value) { return Number.isInteger(Number(value)) && Number(value) > 0; }
-function isValidDate(date) { return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(new Date(`${date}T00:00:00`).getTime()); }
+function isValidDate(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return false;
+  const [year, month, day] = date.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
+}
 function isValidTime(time) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(time); }
 
 function validateMeeting(data) {
@@ -12,6 +17,16 @@ function validateMeeting(data) {
   if (!Array.isArray(data.participant_ids) || data.participant_ids.length === 0) return 'Select at least one executive.';
   if (new Set(data.participant_ids.map(Number)).size !== data.participant_ids.length || !data.participant_ids.every(isPositiveId)) return 'Meeting participants must be unique valid users.';
   return null;
+}
+
+async function participantsAreExecutives(participantIds) {
+  const uniqueIds = [...new Set(participantIds.map(Number))];
+  const placeholders = uniqueIds.map(() => '?').join(', ');
+  const [users] = await databasePool.execute(
+    `SELECT id FROM users WHERE id IN (${placeholders}) AND role = 'executive' AND is_active = TRUE`,
+    uniqueIds
+  );
+  return users.length === uniqueIds.length;
 }
 
 async function getExecutives(request, response, next) {
@@ -68,6 +83,7 @@ async function findSlots(request, response, next) {
     const { executiveIds, date, duration } = request.body || {};
     if (!Array.isArray(executiveIds) || executiveIds.length === 0 || !isValidDate(date) || !Number.isInteger(Number(duration)) || Number(duration) <= 0) return response.status(400).json({ message: 'Executives, a valid date, and a positive duration are required.' });
     if (new Set(executiveIds.map(Number)).size !== executiveIds.length || !executiveIds.every(isPositiveId)) return response.status(400).json({ message: 'Executive IDs must be unique and valid.' });
+    if (!(await participantsAreExecutives(executiveIds))) return response.status(400).json({ message: 'Select active executive users only.' });
     const result = await findCommonSlots(executiveIds.map(Number), date, Number(duration));
     response.json({ availableSlots: result.availableSlots });
   } catch (error) { next(error); }
@@ -78,6 +94,7 @@ async function createMeeting(request, response, next) {
     const validationMessage = validateMeeting(request.body || {});
     if (validationMessage) return response.status(400).json({ message: validationMessage });
     const data = request.body;
+    if (!(await participantsAreExecutives(data.participant_ids))) return response.status(400).json({ message: 'Select active executive users only.' });
     for (const userId of data.participant_ids) {
       if (await hasSchedulingConflict(Number(userId), data.meeting_date, data.start_time, data.end_time)) return response.status(409).json({ message: 'One or more executives already have an engagement during this time.' });
     }
@@ -90,6 +107,32 @@ async function createMeeting(request, response, next) {
   } catch (error) { next(error); }
 }
 
+async function updateMeeting(request, response, next) {
+  try {
+    if (!isPositiveId(request.params.id)) return response.status(400).json({ message: 'Invalid meeting ID.' });
+    const validationMessage = validateMeeting(request.body || {});
+    if (validationMessage) return response.status(400).json({ message: validationMessage });
+    const data = request.body;
+    if (!(await participantsAreExecutives(data.participant_ids))) return response.status(400).json({ message: 'Select active executive users only.' });
+    const [existing] = await databasePool.execute('SELECT id FROM meetings WHERE id = ?', [request.params.id]);
+    if (!existing.length) return response.status(404).json({ message: 'Meeting not found.' });
+
+    for (const userId of data.participant_ids) {
+      if (await hasSchedulingConflict(Number(userId), data.meeting_date, data.start_time, data.end_time, null, request.params.id)) {
+        return response.status(409).json({ message: 'One or more executives already have an engagement during this time.' });
+      }
+    }
+
+    await databasePool.execute(
+      'UPDATE meetings SET title = ?, agenda = ?, venue = ?, start_time = ?, end_time = ?, project_id = ? WHERE id = ?',
+      [data.title.trim(), data.purpose?.trim() || null, data.venue?.trim() || null, `${data.meeting_date} ${data.start_time}:00`, `${data.meeting_date} ${data.end_time}:00`, data.project_id || null, request.params.id]
+    );
+    await databasePool.execute('DELETE FROM meeting_participants WHERE meeting_id = ?', [request.params.id]);
+    for (const userId of data.participant_ids) await databasePool.execute('INSERT INTO meeting_participants (meeting_id, user_id) VALUES (?, ?)', [request.params.id, Number(userId)]);
+    response.json({ message: 'Meeting updated successfully.' });
+  } catch (error) { next(error); }
+}
+
 async function cancelMeeting(request, response, next) {
   try {
     if (!isPositiveId(request.params.id)) return response.status(400).json({ message: 'Invalid meeting ID.' });
@@ -99,4 +142,4 @@ async function cancelMeeting(request, response, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { getExecutives, getMeetings, getDateMeetings, getMeetingById, findSlots, createMeeting, cancelMeeting };
+module.exports = { getExecutives, getMeetings, getDateMeetings, getMeetingById, findSlots, createMeeting, updateMeeting, cancelMeeting };

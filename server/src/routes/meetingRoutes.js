@@ -13,6 +13,7 @@ router.post('/find-slots', authorizeRoles('secretary', 'admin'), meetingControll
 router.get('/', meetingController.getMeetings);
 router.get('/:id', meetingController.getMeetingById);
 router.post('/', authorizeRoles('secretary', 'admin'), meetingController.createMeeting);
+router.put('/:id', authorizeRoles('secretary', 'admin'), meetingController.updateMeeting);
 router.put('/:id/cancel', authorizeRoles('secretary', 'admin'), meetingController.cancelMeeting);
 
 module.exports = router;

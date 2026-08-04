@@ -11,6 +11,7 @@ import Appointments from './pages/Appointments';
 import EditAppointment from './pages/EditAppointment';
 import Meetings from './pages/Meetings';
 import CreateMeeting from './pages/CreateMeeting';
+import EditMeeting from './pages/EditMeeting';
 import MeetingDetails from './pages/MeetingDetails';
 import Leave from './pages/Leave';
 import LeaveRequests from './pages/LeaveRequests';
@@ -39,6 +40,7 @@ function App() {
         <Route path="/appointments/:id" element={<ProtectedRoute allowedRole="executive"><AppointmentDetails /></ProtectedRoute>} />
         <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
         <Route path="/meetings/create" element={<ProtectedRoute allowedRole={['secretary', 'admin']}><CreateMeeting /></ProtectedRoute>} />
+        <Route path="/meetings/edit/:id" element={<ProtectedRoute allowedRole={['secretary', 'admin']}><EditMeeting /></ProtectedRoute>} />
         <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetails /></ProtectedRoute>} />
         <Route path="/leave" element={<ProtectedRoute allowedRole="executive"><Leave /></ProtectedRoute>} />
         <Route path="/leave-requests" element={<ProtectedRoute allowedRole={['secretary', 'admin']}><LeaveRequests /></ProtectedRoute>} />

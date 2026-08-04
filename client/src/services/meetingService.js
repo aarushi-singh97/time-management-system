@@ -7,4 +7,5 @@ export const getMeeting = (id) => request('get', `/meetings/${id}`);
 export const getExecutives = () => request('get', '/meetings/executives');
 export const findSlots = (data) => request('post', '/meetings/find-slots', data);
 export const createMeeting = (data) => request('post', '/meetings', data);
+export const updateMeeting = (id, data) => request('put', `/meetings/${id}`, data);
 export const cancelMeeting = (id) => request('put', `/meetings/${id}/cancel`);
